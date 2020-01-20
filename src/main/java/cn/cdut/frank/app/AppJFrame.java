@@ -2,15 +2,17 @@ package cn.cdut.frank.app;
 
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.util.Enumeration;
 import java.util.List;
@@ -23,7 +25,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -32,6 +34,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.FontUIResource;
 
 import cn.cdut.frank.app.core.JarFileBean;
@@ -41,6 +44,8 @@ public class AppJFrame extends JFrame{
 	private static final int WIDTH = 550;
 	
 	private static final int HEIGHT = 600;
+	
+	private AppJFrame self = this;
 	
 	private JTextArea conflictResult;
 	
@@ -60,17 +65,17 @@ public class AppJFrame extends JFrame{
 	
 	private JPanel buttonsPanel;
 	
-	private JCheckBox filterCheckBox;
-	
 	private JButton startBtn;
 	
 	private JButton autoCheckBtn;
 	
-	private JCheckBoxMenuItem iteraterAllFloder;
+	private JCheckBox iteraterAllFloder;
+	
+	private JCheckBox classFile;
 	
 	public AppJFrame() {
 		super();
-		setTitle("Jar包查找器");
+		setTitle("Jar包冲突查找器-(仅供学习交流)");
 
 		// 框架居中
 		int width = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
@@ -85,13 +90,22 @@ public class AppJFrame extends JFrame{
 	}
 	
 	private void init() {
-		initGlobalFontSetting(new Font("alias", Font.PLAIN, 14));
+		initGlobalFontSetting(new Font("alias", Font.PLAIN, 13));
 		initMembers();
 		initGui();
 		bindEvents();
 	}
 	
 	private void bindEvents() {
+		
+		browseFileBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String filePath = showFileOpenDialog(self);
+				filePathInput.setText(filePath);
+			}
+		});
+		
 		startBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseReleased(MouseEvent e) {
@@ -104,7 +118,7 @@ public class AppJFrame extends JFrame{
 			public void mouseReleased(MouseEvent e) {
 				String path = filePathInput.getText();
 				if(! new File(path).exists()) {
-					logMessage("搜索目录不正确！");
+					logMessage("搜索路径不正确！");
 					return;
 				}
 				boolean iterater = iteraterAllFloder.isSelected();
@@ -146,10 +160,10 @@ public class AppJFrame extends JFrame{
 		messagePanel = new JPanel();
 		bottomPanel = new JScrollPane();
 		buttonsPanel = new JPanel();
-		filterCheckBox = new JCheckBox();
 		startBtn = new JButton("开始检索");
 		autoCheckBtn = new JButton("自动检测重复");
-		iteraterAllFloder = new JCheckBoxMenuItem("迭代子目录", true);
+		iteraterAllFloder = new JCheckBox("迭代子目录", true);
+		classFile = new JCheckBox("class文件", true);
 	}
 	
 	private void initGui() {
@@ -184,6 +198,7 @@ public class AppJFrame extends JFrame{
 		searchPathBox.add(new JLabel("搜索路径："));
 		searchPathBox.add(Box.createHorizontalStrut(20));
 		filePathInput.setMaximumSize(inputAreaSize);
+//		filePathInput.setEditable(false);
 		searchPathBox.add(filePathInput);
 		searchPathBox.add(Box.createHorizontalStrut(20));
 		browseFileBtn.setMaximumSize(buttonSize);
@@ -191,8 +206,9 @@ public class AppJFrame extends JFrame{
 		Box filterSelectBox = Box.createHorizontalBox();
 		filterSelectBox.add(new JLabel("搜索过滤："));
 		filterSelectBox.add(Box.createHorizontalStrut(20));
-		filterCheckBox.add(iteraterAllFloder);
-		filterSelectBox.add(filterCheckBox);
+		filterSelectBox.add(iteraterAllFloder);
+		filterSelectBox.add(classFile);
+		classFile.setEnabled(false);
 		topPanel.add(searchFileBox);
 		topPanel.add(searchPathBox);
 		topPanel.add(filterSelectBox);
@@ -208,6 +224,54 @@ public class AppJFrame extends JFrame{
 		buttonsPanel.add(autoCheckBtn);
 		container.add(baseBox);
 	}
+	
+	/**
+     * 打开文件
+     */
+    private String showFileOpenDialog(Component parent) {
+        // 创建一个默认的文件选取器
+        JFileChooser fileChooser = new JFileChooser();
+        // 设置默认显示的文件夹为当前文件夹
+        fileChooser.setCurrentDirectory(new File("."));
+        // 设置文件选择的模式（只选文件、只选文件夹、文件和文件均可选）
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        // 设置是否允许多选
+        fileChooser.setMultiSelectionEnabled(true);
+        // 添加可用的文件过滤器（FileNameExtensionFilter 的第一个参数是描述, 后面是需要过滤的文件扩展名 可变参数）
+        fileChooser.addChoosableFileFilter(new FileFilter() {
+			@Override
+			public String getDescription() {
+				return null;
+			}
+			@Override
+			public boolean accept(File f) {
+				return f.isDirectory();
+			}
+		});
+        
+        // 设置默认使用的文件过滤器
+        fileChooser.setFileFilter(new FileFilter() {
+			@Override
+			public String getDescription() {
+				return null;
+			}
+			@Override
+			public boolean accept(File f) {
+				return f.isDirectory();
+			}
+		});
+        // 打开文件选择框（线程将被阻塞, 直到选择框被关闭）
+        int result = fileChooser.showOpenDialog(parent);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            // 如果点击了"确定", 则获取选择的文件路径
+            File file = fileChooser.getSelectedFile();
+            // 如果允许选择多个文件, 则通过下面方法获取选择的所有文件
+            // File[] files = fileChooser.getSelectedFiles();
+            logMessage("选择目录: " + file.getAbsolutePath());
+            return file.getAbsolutePath();
+        }
+        return "";
+    }
 
 	//设置全局字体
 	public void initGlobalFontSetting(Font font){
