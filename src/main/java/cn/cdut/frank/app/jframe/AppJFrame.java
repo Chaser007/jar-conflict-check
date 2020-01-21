@@ -1,4 +1,4 @@
-package cn.cdut.frank.app;
+package cn.cdut.frank.app.jframe;
 
 
 import java.awt.Color;
@@ -39,6 +39,11 @@ import javax.swing.plaf.FontUIResource;
 
 import cn.cdut.frank.app.core.JarFileBean;
 
+/**
+ * JFrame窗口类
+ * @author Huang Yong
+ * @date 2020年1月21日 下午11:33:10
+ */
 public class AppJFrame extends JFrame{
 	
 	private static final int WIDTH = 550;
@@ -48,6 +53,10 @@ public class AppJFrame extends JFrame{
 	private AppJFrame self = this;
 	
 	private JTextArea conflictResult;
+	
+	private JLabel qualifiedName;
+	
+	private JLabel searchPath;
 	
 	private JTextField fileNameInput;
 	
@@ -109,7 +118,47 @@ public class AppJFrame extends JFrame{
 		startBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				String fileName = fileNameInput.getText();
+				String filePath = filePathInput.getText();
+				boolean iterater = iteraterAllFloder.isSelected();
 				
+				if(fileName.trim().equals("")) {
+					logMessage("请输入全限定类名");
+					return;
+				}
+				if(! new File(filePath).exists()) {
+					logMessage("搜索路径不正确！");
+					return;
+				}
+				
+				logMessage("正在检索文件...");
+				logResult("检索目录：" + filePath, 0, true);
+				logResult("检索的全限定类名：" + fileName, 0, true);
+				logResult("是否递归检索目录：" + iterater, 1);
+				
+				int count = 0;
+				String classPath = fileName.replaceAll("\\.", "/");
+				JarFileBean jarFileBean = new JarFileBean(filePath, iterater);
+				jarFileBean.checkConflict();
+				Map<String, List<JarFile>> conflictMap = jarFileBean.getConflict();
+				Set<Entry<String, List<JarFile>>> entrySet = conflictMap.entrySet();
+				for(Entry<String, List<JarFile>> entry : entrySet) {
+					if(!entry.getKey().startsWith(classPath)) {
+						continue;
+					}
+					count ++;
+					logResult("类路径 -> " + entry.getKey(), 0);
+					List<JarFile> jarFiles = entry.getValue();
+					for(JarFile jar : jarFiles) {
+						logResult("文件路径： " + jar.getName(), 0);
+					}
+					
+					logResult("", 1);
+				}
+				
+				logMessage("检索完毕！ 冲突项：" + count);
+				
+				jarFileBean.close();
 			}
 		});
 		
@@ -152,6 +201,8 @@ public class AppJFrame extends JFrame{
 	 */
 	private void initMembers() {
 		conflictResult = new JTextArea();
+		qualifiedName = new JLabel("全限定名：");
+		searchPath = new JLabel("搜索路径：");
 		fileNameInput = new JTextField();
 		filePathInput = new JTextField();
 		browseFileBtn = new JButton("选择");
@@ -190,12 +241,12 @@ public class AppJFrame extends JFrame{
 		
 		topPanel.setLayout(new GridLayout(3, 1));
 		Box searchFileBox = Box.createHorizontalBox();
-		searchFileBox.add(new JLabel("搜索文件："));
+		searchFileBox.add(qualifiedName);
 		searchFileBox.add(Box.createHorizontalStrut(20));
 		searchFileBox.add(fileNameInput);
 		fileNameInput.setMaximumSize(inputAreaSize);
 		Box searchPathBox = Box.createHorizontalBox();
-		searchPathBox.add(new JLabel("搜索路径："));
+		searchPathBox.add(searchPath);
 		searchPathBox.add(Box.createHorizontalStrut(20));
 		filePathInput.setMaximumSize(inputAreaSize);
 //		filePathInput.setEditable(false);
@@ -320,12 +371,4 @@ public class AppJFrame extends JFrame{
 		logResult(line, blankRows ,false);
 	}
 
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				AppJFrame app = new AppJFrame();
-			}
-		});
-	}
 }
